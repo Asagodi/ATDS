@@ -170,6 +170,28 @@ while len(candidates) > 0:
             R = Rprime.copy()
     candidates = candidates - R#this is not a good thing to do
     
+repellers = []
+for component in RCs:
+    R = set(component)
+
+    for i in range(1000):
+
+        Rprime = set()
+        for zeta in R:
+            for newzeta in G.in_edges(zeta):
+                Rprime.add(newzeta[0])
+
+        if R == Rprime:
+            #check whether really invariant:
+            if calc_F_inv(R, G) == R:
+                repellers.append(R)
+            repellers.append(R)
+            break
+        else:
+            for r in R:
+                Rprime.add(r)
+            R = Rprime.copy()
+    
         
         
 for i in range(len(attractors)):
@@ -221,3 +243,24 @@ def maximal_closed_subgraph(G):
         else:
             nnodes = len(G.nodes())
     return G
+
+
+def index_pair(N, graph, delta):
+    A = N.copy()
+    B = N.copy()
+    while True:
+        Aprime = calc_F(A, graph)
+        Bprime = calc_F_inv(B, graph)
+        if A == Aprime and B == Bprime:
+            break
+        A = Aprime.copy()
+        B = Bprime.copy()
+    C = A.intersection(B)
+    r = delta
+    intN = 0
+    if B(C,R).in(intN):
+        P1 = A
+        P0 = A - B
+        return (P1, P0)
+    else:
+        print("Failure")
