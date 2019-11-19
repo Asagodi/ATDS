@@ -133,6 +133,7 @@ while len(candidates) > 0:
                 Aprime.add(newzeta[1])
         
         if A == Aprime:
+            #check whether invariant
             if calc_F_inv(A, G):
                 attractors.append(A)
             break
@@ -206,3 +207,17 @@ def calc_F_inv(U, graph):
             Uprime.add(edge[0])
     return Uprime
 
+
+def maximal_closed_subgraph(G):
+    nnodes = len(G.nodes())
+    while True:
+        for i in G.nodes():
+            if len(G.in_edges(i)) == 0:
+                G.remove_node(i)
+            elif len(G.out_edges(i)) == 0:
+                G.remove_node(i)
+        if len(G.nodes())==nnodes:
+            break
+        else:
+            nnodes = len(G.nodes())
+    return G
