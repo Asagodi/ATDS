@@ -122,27 +122,48 @@ for component in RCs:
         candidates.add(zeta)
 
 
+#attractors = []
+#while len(candidates) > 0:
+#    A = set([list(candidates)[0]])
+#    for i in range(1000):
+#
+#        Aprime = set()
+#        for zeta in A:
+#            for newzeta in G.out_edges(zeta):
+#                Aprime.add(newzeta[1])
+#        
+#        if A == Aprime:
+#            #check whether invariant
+#            if calc_F_inv(A, G):
+#                attractors.append(A)
+#            break
+#        else:
+#            for a in A:
+#                Aprime.add(a)
+#            A = Aprime.copy()
+#            
+#    candidates = candidates - A#this is not a good thing to do
+    
 attractors = []
-while len(candidates) > 0:
-    A = set([list(candidates)[0]])
+for component in RCs:
+    A = set(component)
+
     for i in range(1000):
 
         Aprime = set()
         for zeta in A:
-            for newzeta in G.out_edges(zeta):
-                Aprime.add(newzeta[1])
-        
+            for newzeta in G.in_edges(zeta):
+                Aprime.add(newzeta[0])
+
         if A == Aprime:
-            #check whether invariant
-            if calc_F_inv(A, G):
+            #check whether really invariant:
+            if calc_F_inv(A, G) == A:
                 attractors.append(A)
             break
         else:
-            for a in A:
-                Aprime.add(a)
-            A = Aprime.copy()
-            
-    candidates = candidates - A#this is not a good thing to do
+            for r in A:
+                Aprime.add(r)
+            A = Rprime.copy()
     
         
     
@@ -153,22 +174,22 @@ for component in RCs:
         candidates.add(zeta)
 
 
-repellers = []
-while len(candidates) > 0:
-    R = set([list(candidates)[0]])
-    for i in range(1000):
-
-        Rprime = R.copy()
-        for zeta in R:
-            for newzeta in G.in_edges(zeta):
-                Rprime.add(newzeta[0])
-
-        if R == Rprime:
-            repellers.append(R)
-            break
-        else:
-            R = Rprime.copy()
-    candidates = candidates - R#this is not a good thing to do
+#repellers = []
+#while len(candidates) > 0:
+#    R = set([list(candidates)[0]])
+#    for i in range(1000):
+#
+#        Rprime = R.copy()
+#        for zeta in R:
+#            for newzeta in G.in_edges(zeta):
+#                Rprime.add(newzeta[0])
+#
+#        if R == Rprime:
+#            repellers.append(R)
+#            break
+#        else:
+#            R = Rprime.copy()
+#    candidates = candidates - R#this is not a good thing to do
     
 repellers = []
 for component in RCs:
@@ -185,7 +206,7 @@ for component in RCs:
             #check whether really invariant:
             if calc_F_inv(R, G) == R:
                 repellers.append(R)
-            repellers.append(R)
+        
             break
         else:
             for r in R:
