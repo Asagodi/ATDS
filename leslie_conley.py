@@ -10,27 +10,13 @@ import networkx as nx
 import numpy as np
 import pickle
 import subprocess
+import conley
 
 runfile('/home/abel/Downloads/Py_XPPCALL-master/Py_XPPCALL_Example.py', wdir='/home/abel/Downloads/Py_XPPCALL-master')
 
 path_to_ode = '/home/abel/Downloads/xppaut8.0ubuntu/ode/'
 
-def get_cubes_from_data(data, delta):
-    cubes = []
-    time_cubes = []
-    cube_ind = [-1]
-    for i,t in enumerate(data[:-1, 0]):
-        cube = (np.sign(data[i, 0])*delta*math.floor(abs(data[i, 0])/delta)+np.sign(data[i, 0])*delta/2.,
-                  np.sign(data[i, 1])*delta*math.floor(abs(data[i, 1])/delta)+np.sign(data[i, 1])*delta/2.)
-        time_cubes.append(cube)
-        if cube in cubes:
-            ind = cubes.index(cube)
-            cube_ind.append(ind)
-        else:
-            cube_ind.append(max(cube_ind)+1)
-            cubes.append(cube)
-    cube_ind.remove(-1)
-    return cubes, time_cubes, cube_ind
+
 
 path_to_ode = '/home/abel/Downloads/xppaut8.0ubuntu/ode/'
 #RCs
@@ -53,20 +39,13 @@ data = np.array(data)
 data = np.reshape(data, (data.shape[0]*data.shape[1], data.shape[2]))
 
 delta = .25
-cubes, time_cubes, cube_ind = get_cubes_from_data(data, delta)
+cubes, time_cubes, cube_ind = conley.get_cubes_from_data(data, delta)
     
 G = nx.DiGraph()
 number_of_cubes = len(cubes)
 conn_graph = zeros((number_of_cubes,number_of_cubes))
 
-for t,ci2 in enumerate(cube_ind[:]):
-    if t % (time+1) == 0:
-        ci1=cube_ind[t]
-        continue
-
-    conn_graph[ci1,ci2] = 1.
-    G.add_edge(ci1, ci2)
-    ci1 = ci2
+G = conley.make_graph(cube_ind, time)
     
 scc=nx.strongly_connected_component_subgraphs(G)
 RCs = []
@@ -114,6 +93,7 @@ plt.show()
 #plt.scatter(data[np.array(list(set(list(zeta1[0])).intersection(set(list(zeta2[0]))))),:][0,:,0],data[np.array(list(set(list(zeta1[0])).intersection(set(list(zeta2[0]))))),:][0,:,1])
 #    
 
+G = conley.maximal_closed_subgraph(G)
 
 candidates = set()
 
@@ -157,23 +137,21 @@ for component in RCs:
 
         if A == Aprime:
             #check whether really invariant:
-            if calc_F_inv(A, G) == A:
-                attractors.append(A)
+#            if conley.calc_F(A, G) == A:
+        attractors.append(A)
             break
         else:
             for r in A:
                 Aprime.add(r)
-            A = Rprime.copy()
+            A = Aprime.copy()
     
         
     
-candidates = set()
-
-for component in RCs:
-    for zeta in component:
-        candidates.add(zeta)
-
-
+#candidates = set()
+#
+#for component in RCs:
+#    for zeta in component:
+#        candidates.add(zeta)
 #repellers = []
 #while len(candidates) > 0:
 #    R = set([list(candidates)[0]])
@@ -204,8 +182,8 @@ for component in RCs:
 
         if R == Rprime:
             #check whether really invariant:
-            if calc_F_inv(R, G) == R:
-                repellers.append(R)
+#            if calc_F_inv(R, G) == R:
+            repellers.append(R)
         
             break
         else:
@@ -235,53 +213,4 @@ for i in range(len(morse_sets)):
     plt.show()
     
     
-def calc_F(U, graph):
-    Uprime = set()
-    for zeta in U:
-        for edge in graph.out_edges(zeta):
-            Uprime.add(edge[1])
-    return Uprime
 
-
-def calc_F_inv(U, graph):
-    Uprime = set()
-    for zeta in U:
-        for edge in graph.in_edges(zeta):
-            Uprime.add(edge[0])
-    return Uprime
-
-
-def maximal_closed_subgraph(G):
-    nnodes = len(G.nodes())
-    while True:
-        for i in G.nodes():
-            if len(G.in_edges(i)) == 0:
-                G.remove_node(i)
-            elif len(G.out_edges(i)) == 0:
-                G.remove_node(i)
-        if len(G.nodes())==nnodes:
-            break
-        else:
-            nnodes = len(G.nodes())
-    return G
-
-
-def index_pair(N, graph, delta):
-    A = N.copy()
-    B = N.copy()
-    while True:
-        Aprime = calc_F(A, graph)
-        Bprime = calc_F_inv(B, graph)
-        if A == Aprime and B == Bprime:
-            break
-        A = Aprime.copy()
-        B = Bprime.copy()
-    C = A.intersection(B)
-    r = delta
-    intN = 0
-    if B(C,R).in(intN):
-        P1 = A
-        P0 = A - B
-        return (P1, P0)
-    else:
-        print("Failure")
