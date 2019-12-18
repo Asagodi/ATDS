@@ -42,9 +42,13 @@ class Combinatorial_Dynamical_System(object):
         self.cube_ind_dict = {}
         self.index_cube_dict = {}
         ncubes = 0
-        A=lil_matrix((ncubes, ncubes), dtype=np.int8)
-        G = nx.DiGraph()
-        G.add_nodes_from([i for i in range(ncubes)])
+        self.A=lil_matrix((ncubes, ncubes), dtype=np.int8)
+        self.G = nx.DiGraph()
+        self.G.add_nodes_from([i for i in range(ncubes)])
+        
+    def initialise_with_data(self, data, data_length_list):
+        cube_ind = self.get_cubes(data)
+        self.update_graph(cube_ind, data_length_list)
         
         
     def get_cubes(self, data):
@@ -92,33 +96,7 @@ class Combinatorial_Dynamical_System(object):
 #         return cubes, cube_ind, cube_ind_dict, index_cube_dict
 
 
-#     def get_cubes_from_data_intervals(self, cubes = [], time_cubes = [], cube_ind = [-1]):
-#         sigdelta = str(self.delta)[::-1].find('.')+1
-#         dim = self.data.shape[1]
-#         cubes = []
-#         time_cubes = []
-#         cube_ind = [-1]
-#         for i,t in enumerate(self.data[:-1, 0]):
-#             cube = []
-#             for j in range(dim):
-#                 interval = tuple([heaviside(data[i, j])*round(self.delta*np.floor_divide(data[i,j],self.delta), sigdelta),
-#                                   heaviside(data[i, j])*round(self.delta*np.floor_divide(data[i,j],self.delta), sigdelta) + self.delta])
-#                 cube.append(interval)
-#             time_cubes.append(cube)
-#             if cube in cubes:
-#                 ind = cubes.index(cube)
-#                 cube_ind.append(ind)
-#             else:
-#                 cube_ind.append(max(cube_ind)+1)
-#                 cubes.append(cube)
-#         cube_ind.remove(-1)
-#         tuplecubes = []
-#         for cube in cubes:
-#             tuplecubes.append(tuple(cube))
-#         self.cubes = tuplecubes
-#         self.cube_ind = cube_ind
-#         self.cube_ind_dict = cube_ind_dict
-#         return cubes, time_cubes, cube_ind
+
 
 #     def get_cubes_from_datalist(self, data_list, delta):
 #         cubes_list = []
@@ -296,7 +274,8 @@ class Combinatorial_Dynamical_System(object):
         return self.G
 
     def invariantPart(self, N):
-        '''Combinatorial invariant set S inside set N and graph G=\mathcal{F}'''
+        """Combinatorial invariant set S inside set N and graph G=\mathcal{F}
+        returns the set Inv(N , F)"""
         H = deepcopy(nx.subgraph(self.G, N)) #self.restricted_map(N)
         S = set(N).copy()
         while True:  
@@ -380,7 +359,6 @@ class Combinatorial_Dynamical_System(object):
             for i,s in enumerate(some):
                 face[i] = round(cube[i]+s*self.delta, 5)
             L.add(tuple(face))
-#         print(len(list(L)))
         return L
 
     def get_neighours_cubicalset(self, S):
@@ -392,7 +370,7 @@ class Combinatorial_Dynamical_System(object):
     def cubical_wrap(self, S):
         """takes the neighbours of a cubical set,
         same as collar"""
-            #now only works for cubes of dim kmax
+        #now only works for cubes of dim kmax
         maxdim = 0
         for cube in S:
             maxdim = max(get_dim(cube, self.delta), maxdim)
@@ -444,6 +422,11 @@ def convert_to_chomp_format(cubical_set, delta):
 
     return filetxt
 
+
+
+
+
+
 def get_dim(cube, delta):
     "returns dimension of cube"
     return np.where( np.abs(np.mod(cube, delta)-delta/2.) < 0.00001 )[0].shape[0]
@@ -464,6 +447,7 @@ def primaryFaces(cube, delta):
 
 
 def boundaryOperator(cube, delta):
+    "calculates the boundary operator for an elementary cube"
     sgn = 1
     chain = {}
     relcoord = np.where( np.abs(np.mod(cube, delta)-delta/2.) < 0.00001 )[0]
@@ -480,7 +464,7 @@ def boundaryOperator(cube, delta):
 
 def cubicalChainGroups(K, delta):
     "K: cubical set (list of its maximal faces)"
-    "return the groups of cubical chains of a cubical set"
+    "returns E, the groups of cubical chains of a cubical set"
     E = []
 
     while K != set():
@@ -502,16 +486,19 @@ def cubicalChainGroups(K, delta):
     return E
 
 def canonicalCoordinates(chain, K):
-    #K is list of all elementary cubes (can be calc by unrolledE)
+    """returns the vector representation of chain
+    K is list of all elementary cubes for a certain dimension (can be calc by unrolledE)"""
     v = np.zeros(len(K))
     for i in range(len(K)):
-#         print(chain[tuple(list(K)[i])])
         try:
             v[i] = chain[tuple(list(K)[i])]
         except:
             0
     return v
+
+
 def boundaryOperatorMatrix(E, delta):
+    "Calculates the boundary operator for a cubical chain E"
     D = [np.array([]) for k in range(len(E))]
     for k in range(1, len(E)): #range(0, ... ??
         m = len(E[k-1])
@@ -645,4 +632,11 @@ def bettiNumber(k, d_k, d_kplus1):
 
     return kernelDim - imageDim
 
-
+def get_bettiNumbers_of_cubicalset(tuplecubes, delta):
+    """tuplecubes is the set of cubes as tuples of the coordinates of the center"""
+    E = cubicalChainGroups(tuplecubes, delta)
+    D = boundaryOperatorMatrix(E, delta)
+    bettinums = []
+    for i in range(len(D)-1):
+        bettinums.append(bettiNumber(i, D[i], D[i+1]))
+    return bettinums
