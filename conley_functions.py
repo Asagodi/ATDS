@@ -83,59 +83,7 @@ class Combinatorial_Dynamical_System(object):
         self.tuplecubes = []
         for cube in self.cubes:
             self.tuplecubes.append(tuple(cube))
-#         return cubes, tuplecubes, cube_ind, cube_ind_dict, index_cube_dict
         return cube_ind
-
-#     def cubes_from_data(self, data):
-#         self.get_cubes(data)
-        #self.cubes = cubes
-        #self.tuplecubes = tuplecubes
-        #self.cube_ind = cube_ind
-        #self.cube_ind_dict = cube_ind_dict
-        #self.index_cube_dict = {v: k for k, v in self.cube_ind_dict.items()}
-#         return cubes, cube_ind, cube_ind_dict, index_cube_dict
-
-
-
-
-#     def get_cubes_from_datalist(self, data_list, delta):
-#         cubes_list = []
-#         time_cubes_list = []
-#         cube_ind_list = []
-#         for data in data_list:
-#             cubes, time_cubes, cube_ind = get_cubes_from_data(data, delta)
-#             cubes_list.append(cubes)
-#             time_cubes_list.append(time_cubes)
-#             cube_ind_list.append(cube_ind)
-#         return cubes_list, time_cubes_list, cube_ind_list
-
-#     def make_graph(self):
-#         """
-#         Makes graph G and transition matrix A from the cube_ind
-#         takes 
-#         """
-#         ncubes = len(self.cubes)
-#         A=lil_matrix((ncubes, ncubes), dtype=np.int8)
-#         G = nx.DiGraph()
-#         G.add_nodes_from([i for i in range(ncubes)])
-#         i=0
-#         ci1=3
-#         s=-1
-#         for t,ci2 in enumerate(self.cube_ind):
-#             s+=1
-#             if s % data_length_list[i] == 0:
-#                 ci1=self.cube_ind[t+1]
-#                 if s == data_length_list[i]:
-#                     i+=1
-#                     s=0
-#                 continue
-#             if s % data_length_list[i] == 1:
-#                 continue
-#             A[ci1, ci2] = 1.
-#             G.add_edge(ci1, ci2)
-#             ci1 = ci2
-#         self.G = G
-#         return G, A
     
     def update_graph(self, cube_ind, data_length_list, calc_matrix=False):
         """
@@ -633,7 +581,10 @@ def bettiNumber(k, d_k, d_kplus1):
     return kernelDim - imageDim
 
 def get_bettiNumbers_of_cubicalset(tuplecubes, delta):
-    """tuplecubes is the set of cubes as tuples of the coordinates of the center"""
+    """
+    returns betti numbers up to maximal dimension of cubes in tuplecubes
+    tuplecubes is the set of cubes as tuples of the coordinates of the center
+    """
     E = cubicalChainGroups(tuplecubes, delta)
     D = boundaryOperatorMatrix(E, delta)
     bettinums = []
