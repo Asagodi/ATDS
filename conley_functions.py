@@ -13,25 +13,20 @@ from copy import deepcopy
 import itertools
 
 
-def heaviside(x):
-    if x<0:
-        return -1
-    if x>=0:
-        return 1
-
-
 class Combinatorial_Dynamical_System(object):
     "Combinatorial representation of datapoints from samples (from a dynamical system)"
     def __init__(self, delta):
         """
+        f is map that generated data
         delta: diameter of cubes
-        self.cubes are the cubes in the grid that have a datapoint in them
+        self.cubes are the cubes in the grid that have a datapoint in them, \mathcal{X} is a set of full cubes
         a cube is determined by the coordinates of its centre
         self.tuplecubes cubes as tuples
         self.cube_ind: the indices for the cubes in the order as they come in the data
         self.cube_ind_dict: dictionary between the cubes and the indices
         self.cube_ind_dict: dictionary between the indices and the cubes
-        the multivalued map \mathcal{F}=graph G
+        the combinatorial cubical multivalued map \mathcal{F}=graph G 
+            is a representation of f (f(Q)\subset |\mathcal{F}(Q)|) \forall Q\in\mathcal{X}
         """
 #         self.data = data
 #         self.data_length_list = data_length_list
@@ -42,7 +37,8 @@ class Combinatorial_Dynamical_System(object):
         self.cube_ind_dict = {}
         self.index_cube_dict = {}
         ncubes = 0
-        self.A=lil_matrix((ncubes, ncubes), dtype=np.int8)
+        #this can get too big:
+#         self.A=lil_matrix((ncubes, ncubes), dtype=np.int8)
         self.G = nx.DiGraph()
         self.G.add_nodes_from([i for i in range(ncubes)])
         
@@ -91,6 +87,9 @@ class Combinatorial_Dynamical_System(object):
         takes data_length_list as the list of the lengths 
         of the samples of the dynamics
         """
+        ncubes = len(self.cubes)
+        self.G = nx.DiGraph()
+        self.G.add_nodes_from([i for i in range(ncubes)])
         i=0
         ci1=0
         s=-1
@@ -109,8 +108,6 @@ class Combinatorial_Dynamical_System(object):
                 self.A[ci1, ci2] = 1.
             self.G.add_edge(ci1, ci2)
             ci1 = ci2
-        
-        
 
     def update_cubesandgraph(self, data, data_length_list):
         "Update cube set and graph for new data set"
@@ -118,7 +115,8 @@ class Combinatorial_Dynamical_System(object):
         self.update_graph(cube_ind, data_length_list)
 
     def get_recurrent_components(self, includeselfedges=False):
-        """Calculates recurrent components/strongly connected components
+        """
+        Calculates recurrent components/strongly connected components
         these correnspond to the Morse sets
         """
         scc=nx.strongly_connected_components(self.G)
@@ -208,18 +206,19 @@ class Combinatorial_Dynamical_System(object):
     def maximal_closed_subgraph(self):
         "Takes subgraph of all the nodes that have connetions both forwards and backwards"
         nnodes = len(self.G.nodes())
+        H = deepcopy(self.G)
         while True:
             for i in self.G.nodes():
                 if len(self.G.in_edges(i)) == 0:
-                    self.G.remove_node(i)
+                    H.remove_node(i)
                 elif len(self.G.out_edges(i)) == 0:
-                    self.G.remove_node(i)
-            if len(self.G.nodes())==nnodes:
+                    H.remove_node(i)
+            if len(H.nodes())==nnodes:
                 break
             else:
-                nnodes = len(self.G.nodes())
-        self.max_closed = self.G
-        return self.G
+                nnodes = len(H.nodes())
+        self.max_closed = H
+        return H
 
     def invariantPart(self, N):
         """Combinatorial invariant set S inside set N and graph G=\mathcal{F}
@@ -353,6 +352,33 @@ class Combinatorial_Dynamical_System(object):
             intervalcubes.add(tuple(newcube))
         return intervalcubes
 
+    
+    
+
+def heaviside(x):
+    if x<0:
+        return -1
+    if x>=0:
+        return 1
+    
+def embed(data, dim, tau, shift=0):
+    datalist = []
+    for d in range(dim-1):
+        datalist.append(data[shift+d*tau:-(dim-d-1)*tau])
+    datalist.append(data[shift+(dim-1)*tau:])
+    return np.array(datalist).T
+
+def make_grid(dim, low, high, delta):
+    "makes grid in dim dimensions with evenly spaced (hyper)cubes"
+    n=int((high-low)/delta)+1 #+1?
+
+    grid = []
+    for coords in itertools.product(range(n),repeat=dim):
+        gc = []
+        for i in coords:
+            gc.append(low+i*delta)
+        grid.append(gc)
+    return grid
 
 def convert_to_chomp_format(cubical_set, delta):
     """Takes the cubical_set in coordindate representation to the representation for chomp
@@ -369,11 +395,6 @@ def convert_to_chomp_format(cubical_set, delta):
         filetxt = filetxt[:-1]+']\n'
 
     return filetxt
-
-
-
-
-
 
 def get_dim(cube, delta):
     "returns dimension of cube"
@@ -410,7 +431,7 @@ def boundaryOperator(cube, delta):
     return chain
 
 
-def cubicalChainGroups(K, delta):
+def cubicalChainGroups(K, delta, maxdim=None):
     "K: cubical set (list of its maximal faces)"
     "returns E, the groups of cubical chains of a cubical set"
     E = []
@@ -454,118 +475,91 @@ def boundaryOperatorMatrix(E, delta):
         D[k] = np.zeros((m, l))
         for j in range(l):
             chain = boundaryOperator(list(E[k])[j], delta)
-#             print(chain)
             v = canonicalCoordinates(chain, E[k-1])
-#             print(v)
             D[k][:,j] = v
     D[0] = np.array([[0]*len(E[0])])
     return D
 
 
-def rowSwap(A, i, j):
-   temp = np.copy(A[i, :])
-   A[i, :] = A[j, :]
-   A[j, :] = temp
- 
-def colSwap(A, i, j):
-   temp = np.copy(A[:, i])
-   A[:, i] = A[:, j]
-   A[:, j] = temp
- 
-def scaleCol(A, i, c):
-   A[:, i] *= c*np.ones(A.shape[0])
- 
-def scaleRow(A, i, c):
-   A[i, :] *= c*np.ones(A.shape[1])
- 
-def colCombine(A, addTo, scaleCol, scaleAmt):
-   A[:, addTo] += scaleAmt * A[:, scaleCol]
- 
-def rowCombine(A, addTo, scaleRow, scaleAmt):
-   A[addTo, :] += scaleAmt * A[scaleRow, :]
-
-def numPivotCols(A):
-   z = np.zeros(A.shape[0])
-   return [np.all(A[:, j] == z) for j in range(A.shape[1])].count(False)
- 
-def numPivotRows(A):
-   z = np.zeros(A.shape[1])
-   return [np.all(A[i, :] == z) for i in range(A.shape[0])].count(False)
 
 def simultaneousReduce(A, B):
-   if A.shape[1] != B.shape[0]:
-      raise Exception("Matrices have the wrong shape.")
+    if A.shape[1] != B.shape[0]:
+        raise Exception("Matrices have the wrong shape.")
+
+    numRows, numCols = A.shape # col reduce A
  
-   numRows, numCols = A.shape # col reduce A
+    i,j = 0,0
+    while True:
+        if i >= numRows or j >= numCols:
+            break
  
-   i,j = 0,0
-   while True:
-      if i >= numRows or j >= numCols:
-         break
+        if A[i][j] == 0:
+            nonzeroCol = j
+            while nonzeroCol < numCols and A[i,nonzeroCol] == 0:
+                nonzeroCol += 1
  
-      if A[i][j] == 0:
-         nonzeroCol = j
-         while nonzeroCol < numCols and A[i,nonzeroCol] == 0:
-            nonzeroCol += 1
- 
-         if nonzeroCol == numCols:
+        if nonzeroCol == numCols:
             i += 1
             continue
  
-         colSwap(A, j, nonzeroCol)
-         rowSwap(B, j, nonzeroCol)
+        colSwap(A, j, nonzeroCol)
+        rowSwap(B, j, nonzeroCol)
  
-      pivot = A[i,j]
-      scaleCol(A, j, 1.0 / pivot)
-      scaleRow(B, j, 1.0 / pivot)
- 
-      for otherCol in range(0, numCols):
-         if otherCol == j:
-            continue
-         if A[i, otherCol] != 0:
+        pivot = A[i,j]
+        scaleCol(A, j, 1.0 / pivot)
+        scaleRow(B, j, 1.0 / pivot)
+
+        for otherCol in range(0, numCols):
+            if otherCol == j:
+                continue
+        if A[i, otherCol] != 0:
             scaleAmt = -A[i, otherCol]
             colCombine(A, otherCol, j, scaleAmt)
             rowCombine(B, j, otherCol, -scaleAmt)
  
-      i += 1; j+= 1
+        i += 1; j+= 1
  
-   return A,B
+    return A,B
 
 def singleReduce(A):
+    numRows, numCols = A.shape 
+
+    i,j = 0,0
+    while True:
+        if i >= numRows or j >= numCols:
+            break
  
-   numRows, numCols = A.shape 
+        if A[i][j] == 0:
+            nonzeroCol = j
+            while nonzeroCol < numCols and A[i,nonzeroCol] == 0:
+                nonzeroCol += 1
  
-   i,j = 0,0
-   while True:
-      if i >= numRows or j >= numCols:
-         break
- 
-      if A[i][j] == 0:
-         nonzeroCol = j
-         while nonzeroCol < numCols and A[i,nonzeroCol] == 0:
-            nonzeroCol += 1
- 
-         if nonzeroCol == numCols:
+        if nonzeroCol == numCols:
             i += 1
             continue
  
-         colSwap(A, j, nonzeroCol)
+        colSwap(A, j, nonzeroCol)
  
-      pivot = A[i,j]
-      scaleCol(A, j, 1.0 / pivot)
+        pivot = A[i,j]
+        scaleCol(A, j, 1.0 / pivot)
  
-      for otherCol in range(0, numCols):
-         if otherCol == j:
-            continue
-         if A[i, otherCol] != 0:
+        for otherCol in range(0, numCols):
+            if otherCol == j:
+                continue
+        if A[i, otherCol] != 0:
             scaleAmt = -A[i, otherCol]
             colCombine(A, otherCol, j, scaleAmt)
  
-      i += 1; j+= 1
+        i += 1; j+= 1
  
-   return A
+    return A
 
 def bettiNumber(k, d_k, d_kplus1):
+    """
+    returns k-th betti number
+    d_k is k-th boundary operator matrix
+    d_kplus1 is (k+1)-th boundary operator matrix
+    """
     A, B = np.copy(d_k), np.copy(d_kplus1)
     if k == 0:
         B = singleReduce(B.T).T
@@ -574,10 +568,8 @@ def bettiNumber(k, d_k, d_kplus1):
 
     dimKChains = A.shape[1]
     kernelDim = dimKChains - numPivotCols(A)
-    imageDim = min(numPivotRows(B), B.shape[1]) #is this the right fix?
-    
-    print(dimKChains, kernelDim, imageDim)
-
+    imageDim = min(numPivotRows(B), B.shape[1])
+   
     return kernelDim - imageDim
 
 def get_bettiNumbers_of_cubicalset(tuplecubes, delta):
@@ -589,5 +581,148 @@ def get_bettiNumbers_of_cubicalset(tuplecubes, delta):
     D = boundaryOperatorMatrix(E, delta)
     bettinums = []
     for i in range(len(D)-1):
-        bettinums.append(bettiNumber(i, D[i], D[i+1]))
+        bn = bettiNumber(i, D[i], D[i+1])
+#         print(i, bn)
+        bettinums.append(bn)
     return bettinums
+
+def scaleCol(A, i, c):
+    A[:, i] *= c*np.ones(A.shape[0])
+
+def colCombine(A, addTo, scaleCol, scaleAmt):
+    A[:, addTo] += scaleAmt * A[:, scaleCol]
+    
+def colSwap(A, i, j):
+    temp = np.copy(A[:, i])
+    A[:, i] = A[:, j]
+    A[:, j] = temp
+    
+def rowSwap(A, i, j):
+    temp = np.copy(A[i, :])
+    A[i, :] = A[j, :]
+    A[j, :] = temp
+    
+def scaleRow(A, i, c):
+    A[i, :] *= c*np.ones(A.shape[1])
+    
+def rowCombine(A, addTo, scaleRow, scaleAmt):
+    A[addTo, :] += scaleAmt * A[scaleRow, :]
+
+def numPivotCols(A):
+    z = np.zeros(A.shape[0])
+    return [np.all(A[:, j] == z) for j in range(A.shape[1])].count(False)
+ 
+def numPivotRows(A):
+    z = np.zeros(A.shape[1])
+    return [np.all(A[i, :] == z) for i in range(A.shape[0])].count(False)
+
+def smallestNonzero(v, k):
+    alpha = np.min(np.abs(v[k:][np.where(v[k:]!=0)]))
+    i_0 = np.where(np.abs(v[k:]) == alpha)
+    return alpha, i_0
+
+def minNonzero(B, k):
+    v = zeros(B.shape[1])
+    q = zeros(B.shape[1])
+    for i in range(B.shape[0]):
+        if i >= k:
+            v[i], q[i] = smallestNonzero(B[i,:], k)
+    alpha, i_0 = smallestNonzero(v, k)
+    return alpha, i_0, q[i_0]
+
+def rowExchangeOperation(B, Q, Qtil, i, j):
+    B = rowSwap(B, i, j)
+    Q = rowSwap(Q, i, j)
+    Qtil = colSwap(Qtil, i, j)
+    return B, Q, Qtil
+
+def columnExchangeOperation(B, Q, Qtil, i, j):
+    B = colSwap(B, i, j)
+    Q = colSwap(Q, i, j)
+    Qtil = rowSwap(Qtil, i, j)
+    return B, Q, Qtil
+
+def moveMinNonzero(B, Q, Qtil, R, Rtil, k):
+#     print(B.shape, k)
+    alpha, i, j = minNonzero(B, k)
+    B, Q, Qtil = rowExchangeOperation(B, Q, Qtil, i, j)
+    B, R, Rtil = columnExchangeOperation(B, R, Rtil, i, j)
+    return B, Q, Qtil, R, Rtil
+
+def rowPrepare(B,Q,Qtil,k,l):
+    m = B.shape[0]
+    alpha, i_0 = smallestNonzero(B[:,l], k)
+    B, Q, Qtil = rowExchangeOperation(B,Q,Qtil,k,i_0)
+    return B,Q,Qtil
+
+
+def rowReduce(B,Q,Qtil,k,l):
+    m = B.shape[0]
+    while np.all(B[k:,l]!=0): #any or all?
+        B,Q,Qtil = rowPrepare(B,Q,Qtil,k,l)
+        B,Q,Qtil = partRowReduce(B,Q,Qtil,k,l)
+    return B,Q,Qtil
+
+def partRowReduce(B, Q, Qtil, k, l):
+    for i in range(k, B.shape[0]):
+        q = np.floor((B[i, l]/B[k, l]))
+        B[i, :] = B[i, :] - q*B[k, :]
+        Qtil[i, :] = Qtil[i, :] - q*Qtil[k, :]
+        Q[i, :] = Q[i, :] + q*Q[k, :]
+    return B, Q, Qtil
+
+def checkForDivisibility(B, k):
+    for i in range(k+1, B.shape[0]):
+        for j in range(k+1, B.shape[1]):
+            q = np.floor(B[i, j]/B[k, k])
+            
+            if q*B[k,k] != B[i,j]:
+                return False, i, j, q
+    return True, 0, 0, 0
+
+def partSmithForm(B, Q, Qtil, R, Rtil, k):
+    B, Q, Qtil, R, Rtil = moveMinNonzero(B, Q, Qtil, R, Rtil, k)
+    m = B.shape[0]
+    n = B.shape[1]
+    divisible = True
+    while divisible:
+        B, Q, Qtil, R, Rtil = moveMinNonzero(B, Q, Qtil, R, Rtil, k)
+        B, Q, Qtil = partRowReduce(B, Q, Qtil, k, k)
+        if B[k+1:, k] != 0:
+            continue
+        if B[k, k + 1:] != 0:
+            continue
+        divisible, i, j, q = checkForDivisibility(B, k)
+        if not divisible:
+            B, Q, Qtil = rowAddOperation(B, Q, Qtil, i, k, l)
+            B, R, Rtil = columnAddOperation(B, R, Rtil, k, j, -q)
+    return B, Q, Qtil, R, Rtil
+
+def rowMultiply(B, i):
+    B[i, :] = -B[i, :]
+    return B
+
+def columnMultiply(B, i):
+    B[:, i] = -B[:, i]
+    return B
+
+def rowMultiplyOperation(B, Q, Qtil, i):
+    B = rowMultiply(B, i)
+    Qtil = rowMultiply(Qtil, i)
+    B = columnMultiply(B, i)
+    return B, Q, Qtil
+
+def smithForm(B):
+    m = B.shape[0]
+    n = B.shape[1]
+    Q, Qtil = eye(m), eye(m)
+    R, Rtil = eye(n), eye(n)
+    s, t = 0, 0
+    while np.all(B[t:, t:] != 0):
+        t+=1
+        B, Q, Qtil, R, Rtil = partSmithForm(B, Q, Qtil, R, Rtil, t)
+        if B[t, t] < 0:
+            B, Q, Qtil = rowMultiplyOperation(B,Q,Qtil)
+        if B[t, t] == 1:
+            s = s + 1
+    return B, Q, Qtil, R, Rtil, s, t
