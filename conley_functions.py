@@ -352,6 +352,15 @@ class Combinatorial_Dynamical_System(object):
             intervalcubes.add(tuple(newcube))
         return intervalcubes
 
+    def convert_to_integertupleformat(cubical_set, delta):
+        """Takes the cubical_set in coordindate representation to another representation for chomp
+        (0.5, 1.5, 5.5)->[(0) (1) (5)] if delta=1"""
+        itf = []
+        for cube in cubical_set:
+            new = tuple(np.array(np.round((np.array(cube)/delta)),dtype='int'))
+            itf.append(new)
+        return itf
+    
     
     
 
@@ -395,6 +404,24 @@ def convert_to_chomp_format(cubical_set, delta):
         filetxt = filetxt[:-1]+']\n'
 
     return filetxt
+
+def write_map_chompformat(graph, delta):
+    cubefile=''
+    mapfile=''
+    for i,j in enumerate(graph.nodes()):
+        c=cds.convert_to_integertupleformat(cds.convert_indices_to_cubes([j]), delta)[0]
+        cubefile+=str(c)+'\n'
+        outedges = []
+        for edge in graph.out_edges(j):
+            outedges.append(edge[1])
+        outedges = cds.convert_indices_to_cubes(outedges)
+        intformat = cds.convert_to_integertupleformat(outedges, cds.delta)
+        if list(outedges)!=[]:
+            infs = ''
+            for cint in intformat:
+                infs+=str(cint)+' '
+            mapfile+=str(c)+' -> {' + infs[:-1] + '}\n'
+    return cubefile, mapfile
 
 def get_dim(cube, delta):
     "returns dimension of cube"
