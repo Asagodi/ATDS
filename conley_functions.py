@@ -410,7 +410,7 @@ def primaryFaces(cube, delta):
     for i in range(k):
         for j in range(2):
             face = list(deepcopy(cube))
-            face[relcoord[i]] = cube[relcoord[i]]+(-1)**j*delta/2.
+            face[relcoord[i]] = round(cube[relcoord[i]]+(-1)**j*delta/2.,3)
             L.add(tuple(face))
     return L
 
@@ -455,7 +455,7 @@ def cubicalChainGroups(K, delta, maxdim=None):
     return E
 
 def canonicalCoordinates(chain, K):
-    """returns the vector representation of chain
+    """returns the vector representation of a chain
     K is list of all elementary cubes for a certain dimension (can be calc by unrolledE)"""
     v = np.zeros(len(K))
     for i in range(len(K)):
@@ -469,7 +469,7 @@ def canonicalCoordinates(chain, K):
 def boundaryOperatorMatrix(E, delta):
     "Calculates the boundary operator for a cubical chain E"
     D = [np.array([]) for k in range(len(E))]
-    for k in range(1, len(E)): #range(0, ... ??
+    for k in range(1, len(E)): 
         m = len(E[k-1])
         l = len(E[k])
         D[k] = np.zeros((m, l))
@@ -582,7 +582,6 @@ def get_bettiNumbers_of_cubicalset(tuplecubes, delta):
     bettinums = []
     for i in range(len(D)-1):
         bn = bettiNumber(i, D[i], D[i+1])
-#         print(i, bn)
         bettinums.append(bn)
     return bettinums
 
