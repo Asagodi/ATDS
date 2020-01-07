@@ -206,19 +206,21 @@ class Combinatorial_Dynamical_System(object):
     def maximal_closed_subgraph(self):
         "Takes subgraph of all the nodes that have connetions both forwards and backwards"
         nnodes = len(self.G.nodes())
-        H = deepcopy(self.G)
+        Hp = deepcopy(self.G)
+        Hpp = deepcopy(self.G)
         while True:
-            for i in self.G.nodes():
-                if len(self.G.in_edges(i)) == 0:
-                    H.remove_node(i)
-                elif len(self.G.out_edges(i)) == 0:
-                    H.remove_node(i)
-            if len(H.nodes())==nnodes:
+            for i in Hpp.nodes():
+                if len(Hp.in_edges(i)) == 0:
+                    Hp.remove_node(i)
+                elif len(Hp.out_edges(i)) == 0:
+                    Hp.remove_node(i)
+            if len(Hp.nodes())==nnodes:
                 break
             else:
-                nnodes = len(H.nodes())
-        self.max_closed = H
-        return H
+                nnodes = len(Hp.nodes())
+            Hpp = deepcopy(Hp)
+        self.max_closed = Hp
+        return Hp
 
     def invariantPart(self, N):
         """Combinatorial invariant set S inside set N and graph G=\mathcal{F}
@@ -363,7 +365,7 @@ class Combinatorial_Dynamical_System(object):
             for edge in self.G.out_edges(j):
                 outedges.append(edge[1])
             outedges = self.convert_indices_to_cubes(outedges)
-            intformat = self.convert_to_integertupleformat(outedges, self.delta)
+            intformat = self.convert_to_integertupleformat(outedges)
             if list(outedges)!=[]:
                 infs = ''
                 for cint in intformat:
@@ -380,7 +382,7 @@ class Combinatorial_Dynamical_System(object):
             itf.append(new)
         return itf
     
-    
+
 
 def heaviside(x):
     if x<0:
