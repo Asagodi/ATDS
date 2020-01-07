@@ -360,7 +360,7 @@ class Combinatorial_Dynamical_System(object):
             c=self.convert_to_integertupleformat(self.convert_indices_to_cubes([j]))[0]
             cubefile+=str(c)+'\n'
             outedges = []
-            for edge in graph.out_edges(j):
+            for edge in self.G.out_edges(j):
                 outedges.append(edge[1])
             outedges = self.convert_indices_to_cubes(outedges)
             intformat = self.convert_to_integertupleformat(outedges, self.delta)
