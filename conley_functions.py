@@ -328,14 +328,10 @@ class Combinatorial_Dynamical_System(object):
         N = set()
         for cube in S:
             L = self.cubicalwrap_cube(cube, maxdim)
-#             print("CUBE", cube)
             for l in L:
-#                 print("l", l)
                 N.add(l)
         return N
         
-
-
     def restricted_map(self, N):
         """For the graph self.G takes the subgraph with nodes in list of nodes N"""
         return nx.subgraph(self.G, N)
@@ -356,6 +352,7 @@ class Combinatorial_Dynamical_System(object):
 
 
     def write_map_chompformat(self):
+        """"""
         cubefile=''
         mapfile=''
         for i,j in enumerate(self.G.nodes()):
@@ -378,11 +375,57 @@ class Combinatorial_Dynamical_System(object):
         (0.5, 1.5, 5.5)->[(0) (1) (5)] if delta=1"""
         itf = []
         for cube in cubical_set:
-            new = tuple(np.array(np.round((np.array(cube)/self.delta)),dtype='int'))
+            new = tuple(np.array(np.round((np.array(cube)/self.delta), decimals=1),dtype='int'))
             itf.append(new)
         return itf
     
+    def make_isolated(self, N_ind, maxsteps = 10):
+        N_ind = self.convert_cubes_to_indices(N)
+        I = self.invariantPart(N_ind)
+        I_cubes = self.convert_cubes_to_indices(I)
+        for st in range(maxsteps):
+            M = self.cubical_wrap(I_cubes).intersection(self.cubes)
+    #         M_ind = self.convert_cubes_to_indices(M)
+            I_cubes = self.invariantPart(M) 
+            I_wrap = self.cubical_wrap(I_cubes).intersection(self.cubes)
+            if I_cubes.issubset(I_wrap):
+                return I_cubes
+        print("Did not find isolated neighbourhood with given maximal steps")
+    
+def write_mapandcubes(graph, delta, cds):
+    """"""
+    cubefile=''
+    mapfile=''
+    for i,j in enumerate(graph.nodes()):
+        c=convert_to_integertupleformat(convert_indices_to_cubes([j], cds), delta)[0]
+        cubefile+=str(c)+'\n'
+        outedges = []
+        for edge in graph.out_edges(j):
+            outedges.append(edge[1])
+        outedges = convert_indices_to_cubes(outedges, cds)
+        intformat = convert_to_integertupleformat(outedges, delta)
+        if list(outedges)!=[]:
+            infs = ''
+            for cint in intformat:
+                infs+=str(cint)+' '
+            mapfile+=str(c)+' -> {' + infs[:-1] + '}\n'
+    return cubefile, mapfile
 
+def convert_to_integertupleformat(cubical_set, delta):
+    """Takes the cubical_set in coordindate representation to another representation for chomp
+    (0.5, 1.5, 5.5)->[(0) (1) (5)] if delta=1"""
+    itf = []
+    for cube in cubical_set:
+        new = tuple(np.array(np.round((np.array(cube)/delta), decimals=1),dtype='int'))
+        itf.append(new)
+    return itf
+
+def convert_indices_to_cubes(indexset, cds):
+    "Gets coordinates of the centres of cubes of set of cube indices (inverse of convert_cubes_to_indices)"
+    cubicalset = set()
+    for cube in indexset:
+        cubicalset.add(cds.index_cube_dict[cube])
+    return cubicalset
 
 def heaviside(x):
     if x<0:
@@ -417,15 +460,10 @@ def convert_to_chomp_format(cubical_set, delta):
         
         filetxt += '['
         for coord in cube:
-            new = np.array(np.round((np.array(coord)/delta)),dtype='int')
-
-                
+#             new = np.array(np.round((np.array(coord)/delta)),dtype='int')
             filetxt+=str(tuple(np.array(np.round((np.array(coord)/delta)),dtype='int')))+ ' '
         filetxt = filetxt[:-1]+']\n'
-
     return filetxt
-
-
 
 def get_dim(cube, delta):
     "returns dimension of cube"
