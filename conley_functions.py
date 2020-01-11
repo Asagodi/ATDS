@@ -95,8 +95,10 @@ class Combinatorial_Dynamical_System(object):
         self.G.add_nodes_from(self.bins)
         i=0
         bin1=self.bins[0]
+        bin2=self.bins[1]
+        self.G.add_edge(tuple(bin1), tuple(bin2))
         s=-1
-        for t,bin2 in enumerate(digitized):
+        for t,bin2 in enumerate(digitized[:-1]):
             s+=1
             if s % data_length_list[i] == 0:
                 bin1=digitized[t+1]
@@ -105,6 +107,9 @@ class Combinatorial_Dynamical_System(object):
                     s=0
                 continue
             if s % data_length_list[i] == 1:
+                bin1=digitized[t]
+                bin2=digitized[t+1]
+                self.G.add_edge(tuple(bin1), tuple(bin2))
                 continue
             #how to change size A?
 #             if calc_matrix:
@@ -287,47 +292,35 @@ class Combinatorial_Dynamical_System(object):
         returns index pair of N, if it is an isolating neighbourhood,
         otherwise returns Failure
         """
-        N_ind = []
-        for cube in N:
-            N_ind.append(self.cube_ind_dict[cube])
-
-        S_ind = self.invariantPart(N_ind)
-        S_cubes = []
-        for cube in S_ind:
-            S_cubes.append(self.index_cube_dict[cube])
-        
-        M = self.cubical_wrap(S_cubes).intersection(set(self.tuplecubes))
+        S = self.invariantPart(N)
+        M = self.cubical_wrap(S).intersection(self.G.nodes())
         if M.issubset(N):
-            M_ind = []
-            for cube in N:
-                M_ind.append(self.cube_ind_dict[cube])
-            F = self.restricted_map(M_ind)
-            C = self.get_neighours_cubicalset(S_cubes)#collar(S)
-            C = C.intersection(set(self.tuplecubes))
-            C_ind = set()
-            for cube in C:
-                C_ind.add(self.cube_ind_dict[cube])
-            P0 = set(self.evaluate(F, S_ind)).intersection(C_ind)
+            F = self.restricted_map(M)
+            C = self.get_neighours_cubicalset(S)#collar(S)
+            C = C.intersection(self.G.nodes())
+            P0 = set(self.evaluate(F, S)).intersection(C)
             while True:
                 lastP0 = P0
                 P0 = self.evaluate(F, P0).intersection(C)
                 P0 = P0.union(lastP0)
                 if P0 == lastP0:
                     break
-            P1 = S_ind.union(P0)
+            P1 = S.union(P0)
             Pbar1 = self.evaluate(F, P1)
-            Pbar0 = Pbar1 - S_ind
+            Pbar0 = Pbar1 - S
             return P1, P0, Pbar1, Pbar0
         else:
             return "Failure"
         
     def get_neighours_cube(self, cube, kmax):
-        """Takes the neighbours of a cube"""
-        L = set()
+        """Takes the neighbours of a cube
+        returns 3**kmax """
+        
+        L = set(cube)
         for some in itertools.product([-1,0,1], repeat=kmax):
             face = list(deepcopy(cube))
             for i,s in enumerate(some):
-                face[i] = round(cube[i]+s*self.delta, 5)
+                face[i] = cube[i]+s
             L.add(tuple(face))
         L.remove(cube)
 
@@ -339,7 +332,7 @@ class Combinatorial_Dynamical_System(object):
         for some in itertools.product([-1,0,1], repeat=kmax):
             face = list(deepcopy(cube))
             for i,s in enumerate(some):
-                face[i] = round(cube[i]+s*self.delta, 5)
+                face[i] = cube[i]+s
             L.add(tuple(face))
         return L
 
@@ -354,13 +347,10 @@ class Combinatorial_Dynamical_System(object):
         same as collar"""
         #now only works for cubes of dim kmax
         maxdim = 0
-        for cube in S:
-            maxdim = max(get_dim(cube, self.delta), maxdim)
-
-
+        dim = len(list(S)[0])
         N = set()
         for cube in S:
-            L = self.cubicalwrap_cube(cube, maxdim)
+            L = self.cubicalwrap_cube(cube, dim)
             for l in L:
                 N.add(l)
         return N
@@ -412,36 +402,52 @@ class Combinatorial_Dynamical_System(object):
             itf.append(new)
         return itf
     
-    def make_isolated(self, N_ind, maxsteps = 10):
-        N_ind = self.convert_cubes_to_indices(N)
-        I = self.invariantPart(N_ind)
-        I_cubes = self.convert_cubes_to_indices(I)
+    def make_isolated(self, N, maxsteps = 10):
+        I = self.invariantPart(N)
         for st in range(maxsteps):
-            M = self.cubical_wrap(I_cubes).intersection(self.cubes)
-    #         M_ind = self.convert_cubes_to_indices(M)
-            I_cubes = self.invariantPart(M) 
-            I_wrap = self.cubical_wrap(I_cubes).intersection(self.cubes)
-            if I_cubes.issubset(I_wrap):
-                return I_cubes
-        print("Did not find isolated neighbourhood with given maximal steps")
+            I_wrap = self.cubical_wrap(I).intersection(self.G.nodes())
+#             M = self.cubical_wrap(I).intersection(self.G.nodes())
+            I = self.invariantPart(M) 
+        if I.issubset(I_wrap):
+            return I
+        else:
+            print("Did not find isolated neighbourhood with given maximal steps")
     
+# def write_mapandcubes(graph, delta, cds):
+#     """"""
+#     cubefile=''
+#     mapfile=''
+#     for i,j in enumerate(graph.nodes()):
+#         c=convert_to_integertupleformat(convert_indices_to_cubes([j], cds), delta)[0]
+#         cubefile+=str(c)+'\n'
+#         outedges = []
+#         for edge in graph.out_edges(j):
+#             outedges.append(edge[1])
+#         outedges = convert_indices_to_cubes(outedges, cds)
+#         intformat = convert_to_integertupleformat(outedges, delta)
+#         if list(outedges)!=[]:
+#             infs = ''
+#             for cint in intformat:
+#                 infs+=str(cint)+' '
+#             mapfile+=str(c)+' -> {' + infs[:-1] + '}\n'
+#     return cubefile, mapfile
+
 def write_mapandcubes(graph, delta, cds):
     """"""
     cubefile=''
     mapfile=''
-    for i,j in enumerate(graph.nodes()):
-        c=convert_to_integertupleformat(convert_indices_to_cubes([j], cds), delta)[0]
-        cubefile+=str(c)+'\n'
+    for i,node in enumerate(graph.nodes()):
+#         print(node)
+        cubefile+=str(node)+'\n'
         outedges = []
-        for edge in graph.out_edges(j):
+        for edge in graph.out_edges(node):
             outedges.append(edge[1])
-        outedges = convert_indices_to_cubes(outedges, cds)
-        intformat = convert_to_integertupleformat(outedges, delta)
+#         print(outedges)
         if list(outedges)!=[]:
             infs = ''
-            for cint in intformat:
+            for cint in outedges:
                 infs+=str(cint)+' '
-            mapfile+=str(c)+' -> {' + infs[:-1] + '}\n'
+            mapfile+=str(node)+' -> {' + infs[:-1] + '}\n'
     return cubefile, mapfile
 
 def convert_to_integertupleformat(cubical_set, delta):
