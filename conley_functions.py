@@ -11,6 +11,7 @@ import networkx as nx
 from scipy.sparse import csr_matrix, lil_matrix
 from copy import deepcopy
 import itertools
+from collections import Counter
 
 
 class Combinatorial_Dynamical_System(object):
@@ -80,6 +81,38 @@ class Combinatorial_Dynamical_System(object):
         for cube in self.cubes:
             self.tuplecubes.append(tuple(cube))
         return cube_ind
+    
+    def get_cubesandgraph(self, data, nbins, data_length_list, maxval=None):
+        if maxval==None:
+            maxval = np.max(data)
+        bins = np.linspace(0, maxval, nbins)
+        digitized = np.digitize(data, bins)
+        tuple_codewords = map(tuple, digitized)
+        freq_dict_gdd = Counter(tuple_codewords)
+        self.bins = list(freq_dict_gdd.keys())
+
+        self.G = nx.DiGraph()
+        self.G.add_nodes_from(self.bins)
+        i=0
+        bin1=self.bins[0]
+        s=-1
+        for t,bin2 in enumerate(digitized):
+            s+=1
+            if s % data_length_list[i] == 0:
+                bin1=digitized[t+1]
+                if s == data_length_list[i]:
+                    i+=1
+                    s=0
+                continue
+            if s % data_length_list[i] == 1:
+                continue
+            #how to change size A?
+#             if calc_matrix:
+#                 self.A[ci1, ci2] = 1.
+            self.G.add_edge(tuple(bin1), tuple(bin2))
+            bin1 = bin2
+    
+        
     
     def update_graph(self, cube_ind, data_length_list, calc_matrix=False):
         """
