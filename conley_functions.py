@@ -82,9 +82,14 @@ class Combinatorial_Dynamical_System(object):
             self.tuplecubes.append(tuple(cube))
         return cube_ind
     
-    def get_cubesandgraph(self, data, nbins, data_length_list, maxval=None):
+    def get_cubesandgraph(self, data, nbins, data_length_list, minval=None, maxval=None):
+        if minval==None:
+            minval = np.min(data)
+            self.minval = minval
         if maxval==None:
             maxval = np.max(data)
+            self.maxval = maxval
+        
         bins = np.linspace(0, maxval, nbins)
         digitized = np.digitize(data, bins)
         tuple_codewords = map(tuple, digitized)
@@ -94,8 +99,8 @@ class Combinatorial_Dynamical_System(object):
         self.G = nx.DiGraph()
         self.G.add_nodes_from(self.bins)
         i=0
-        bin1=self.bins[0]
-        bin2=self.bins[1]
+        bin1=digitized[0]
+        bin2=digitized[1]
         self.G.add_edge(tuple(bin1), tuple(bin2))
         s=-1
         for t,bin2 in enumerate(digitized[:-1]):
