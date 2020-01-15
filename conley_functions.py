@@ -884,7 +884,7 @@ def smithForm(B):
             s = s + 1
     return B, Q, Qtil, R, Rtil, s, t
 
-def make_wc(W, ps, dt=0.05):
+def make_wc(W, ps, dt=0.1):
     N = W.shape[0]
     eqstring = ''
     wi = 0
@@ -915,6 +915,51 @@ def make_wc(W, ps, dt=0.05):
     wcstring = "# the wilson-cowan equations\n"
 #     wcstring += "f(u)=u/(sqrt(1+u**2))\n"##1/(1+exp(-u))
     wcstring += "f(u)=1/(1+exp(-u))\n"##
+    wcstring += eqstring[:-1] + "\n"
+    wcstring += weighstring[:-1] + "\n"
+    wcstring += inputstring[:-1] + " \n"
+    wcstring += initstring[:-1] + "\n"
+    wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1,dt=%s\n'%dt
+    wcstring += "done"
+    return wcstring
+
+
+def make_wc_mayu(W, ps, sigmoids, others, dt=0.05):
+#     W, ps, k
+    N = W.shape[0]
+    eqstring = ''
+    wi = 0
+    for i in range(1,W.shape[0]+1):
+        eqstring+='x'+str(i)+"'=-x"+str(i)+"+(1-x"+str(i)+")*"+"f%s("%(np.mod(i,2))+'w'+str((i-1)*N+i-1)+"*x"+str(i)+'+p%s+'%(i)#+'-b*y'+str(i)
+        for j in range(1,W.shape[1]+1):
+            if i!=j:
+                eqstring+='w'+str(wi)+"*x"+str(j)+'+'
+            wi+=1
+        eqstring=eqstring[:-1]+')\n'
+
+    weighstring = 'p '
+    wi=0
+    for i in range(0,W.shape[0]):
+        for j in range(0,W.shape[1]):
+            weighstring+='w'+str(wi)+'='+str(round(W[i,j], 2))+','
+            wi+=1
+
+    inputstring = 'par '
+    for i in range(0,W.shape[0]):
+        inputstring+='p'+str(i+1)+'='+str(ps[i])+','
+        
+    for par in others:
+        inputstring+=par+'='+str(others[par])+','
+
+    initstring = 'init '
+    inits = [0.]*N#np.random.rand(2*N)
+    for i in range(W.shape[0]):
+            initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
+
+    wcstring = "# the wilson-cowan equations\n"
+#     wcstring += "f(u)=u/(sqrt(1+u**2))\n"##1/(1+exp(-u))
+    for sigmoid in sigmoids:
+        wcstring += sigmoid+"\n"
     wcstring += eqstring[:-1] + "\n"
     wcstring += weighstring[:-1] + "\n"
     wcstring += inputstring[:-1] + " \n"
