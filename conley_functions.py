@@ -82,7 +82,7 @@ class Combinatorial_Dynamical_System(object):
             self.tuplecubes.append(tuple(cube))
         return cube_ind
     
-    def get_cubesandgraph(self, data, nbins, data_length_list, minval=None, maxval=None):
+    def get_cubesandgraph(self, data, nbins, data_length_list, minval=None, maxval=None, calc_matrix=False):
         if minval==None:
             minval = np.min(data)
             self.minval = minval
@@ -93,8 +93,12 @@ class Combinatorial_Dynamical_System(object):
         bins = np.linspace(0, maxval, nbins)
         digitized = np.digitize(data, bins)
         tuple_codewords = map(tuple, digitized)
-        freq_dict_gdd = Counter(tuple_codewords)
-        self.bins = list(freq_dict_gdd.keys())
+        freq_ = Counter(tuple_codewords)
+        self.bins = list(freq_.keys())
+        self.nbins = len(list(freq_.keys()))
+        self.cube_ind_dict = {k: i for i,k in enumerate(list(freq_.keys()))}
+        if calc_matrix:
+            self.A=lil_matrix((self.nbins, self.nbins), dtype=np.int8)
 
         self.G = nx.DiGraph()
         self.G.add_nodes_from(self.bins)
@@ -116,9 +120,11 @@ class Combinatorial_Dynamical_System(object):
                 bin2=digitized[t+1]
                 self.G.add_edge(tuple(bin1), tuple(bin2))
                 continue
-            #how to change size A?
-#             if calc_matrix:
-#                 self.A[ci1, ci2] = 1.
+
+            if calc_matrix:
+                ci1 = self.cube_ind_dict[tuple(bin1)]
+                ci2 = self.cube_ind_dict[tuple(bin2)]
+                self.A[ci1, ci2] = 1
             self.G.add_edge(tuple(bin1), tuple(bin2))
             bin1 = bin2
     
@@ -471,6 +477,8 @@ def convert_indices_to_cubes(indexset, cds):
         cubicalset.add(cds.index_cube_dict[cube])
     return cubicalset
 
+
+####....
 def heaviside(x):
     if x<0:
         return -1
@@ -875,3 +883,41 @@ def smithForm(B):
         if B[t, t] == 1:
             s = s + 1
     return B, Q, Qtil, R, Rtil, s, t
+
+def make_wc(W, ps):
+    N = W.shape[0]
+    eqstring = ''
+    wi = 0
+    for i in range(1,W.shape[0]+1):
+        eqstring+='x'+str(i)+"'=-x"+str(i)+"+f("+'w'+str((i-1)*N+i-1)+"*x"+str(i)+'+p%s+'%(i)#+'-b*y'+str(i)
+        for j in range(1,W.shape[1]+1):
+            if i!=j:
+                eqstring+='w'+str(wi)+"*x"+str(j)+'+'
+            wi+=1
+        eqstring=eqstring[:-1]+')\n'
+
+    weighstring = 'p '
+    wi=0
+    for i in range(0,W.shape[0]):
+        for j in range(0,W.shape[1]):
+            weighstring+='w'+str(wi)+'='+str(round(W[i,j], 2))+','
+            wi+=1
+
+    inputstring = 'par '
+    for i in range(0,W.shape[0]):
+        inputstring+='p'+str(i+1)+'='+str(ps[i])+','
+
+    initstring = 'init '
+    inits = [0.]*N#np.random.rand(2*N)
+    for i in range(W.shape[0]):
+            initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
+
+    wcstring = "# the wilson-cowan equations\n"
+    wcstring += "f(u)=1/(1+exp(-u))\n"
+    wcstring += eqstring[:-1] + "\n"
+    wcstring += weighstring[:-1] + "\n"
+    wcstring += inputstring[:-1] + " \n"
+    wcstring += initstring[:-1] + "\n"
+    wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1\n'
+    wcstring += "done"
+    return wcstring
