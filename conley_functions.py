@@ -884,7 +884,7 @@ def smithForm(B):
             s = s + 1
     return B, Q, Qtil, R, Rtil, s, t
 
-def make_wc(W, ps):
+def make_wc(W, ps, dt=0.05):
     N = W.shape[0]
     eqstring = ''
     wi = 0
@@ -913,11 +913,12 @@ def make_wc(W, ps):
             initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
 
     wcstring = "# the wilson-cowan equations\n"
-    wcstring += "f(u)=1/(1+exp(-u))\n"
+#     wcstring += "f(u)=u/(sqrt(1+u**2))\n"##1/(1+exp(-u))
+    wcstring += "f(u)=1/(1+exp(-u))\n"##
     wcstring += eqstring[:-1] + "\n"
     wcstring += weighstring[:-1] + "\n"
     wcstring += inputstring[:-1] + " \n"
     wcstring += initstring[:-1] + "\n"
-    wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1\n'
+    wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1,dt=%s\n'%dt
     wcstring += "done"
     return wcstring
