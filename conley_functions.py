@@ -930,7 +930,7 @@ def make_wc_mayu(W, ps, sigmoids, others, dt=0.05):
     eqstring = ''
     wi = 0
     for i in range(1,W.shape[0]+1):
-        eqstring+='x'+str(i)+"'=-x"+str(i)+"+(1-x"+str(i)+")*"+"f%s("%(np.mod(i,2))+'w'+str((i-1)*N+i-1)+"*x"+str(i)+'+p%s+'%(i)#+'-b*y'+str(i)
+        eqstring+='x'+str(i)+"'=-x"+str(i)+"+(1-x"+str(i)+")*"+"f%s("%(np.mod(i+1,2))+'w'+str((i-1)*N+i-1)+"*x"+str(i)+'+p%s+'%(i)#+'-b*y'+str(i)
         for j in range(1,W.shape[1]+1):
             if i!=j:
                 eqstring+='w'+str(wi)+"*x"+str(j)+'+'
