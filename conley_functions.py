@@ -967,3 +967,13 @@ def make_wc_mayu(W, ps, sigmoids, others, dt=0.05):
     wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1,dt=%s\n'%dt
     wcstring += "done"
     return wcstring
+
+def jac(x,W,ps):
+    n=W.shape[0]
+    J = np.zeros((n,n))
+    for i in range(n):
+        for j in range(n):
+            ins = np.dot(W[i,:], x)-ps[i]
+#             print(ins.shape)
+            J[i,j] = -W[i,j]*np.exp(-ins)/(sigmoid(ins)**2)-1
+    return J
