@@ -977,3 +977,15 @@ def jac(x,W,ps):
 #             print(ins.shape)
             J[i,j] = -W[i,j]*np.exp(-ins)/(sigmoid(ins)**2)-1
     return J
+
+def eval_wcode(x, W, ps):
+    return -x+sigmoid(W.dot(x)+np.array(ps))
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def F(x):
+    return -x+sigmoid(W.dot(x)+np.array(ps))
+
+def G(x):
+    -x+sigmoid(W[0,0]*x+ps[0])
