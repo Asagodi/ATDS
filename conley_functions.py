@@ -973,9 +973,8 @@ def jac(x,W,ps):
     J = np.zeros((n,n))
     for i in range(n):
         for j in range(n):
-            ins = np.dot(W[i,:], x)-ps[i]
-#             print(ins.shape)
-            J[i,j] = -W[i,j]*np.exp(-ins)/(sigmoid(ins)**2)-1
+            ins = np.dot(W[i,:], x)+ps[i]
+            J[i,j] = W[i,j]*sigmoid(ins)*(1-sigmoid(ins))
     return J
 
 def eval_wcode(x, W, ps):
