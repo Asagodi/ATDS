@@ -900,6 +900,8 @@ def make_wc(W, ps, dt=0.1):
     wi=0
     for i in range(0,W.shape[0]):
         for j in range(0,W.shape[1]):
+            if wi%25==0 and wi!=0:
+                weighstring=weighstring[:-1]+'\np '
             weighstring+='w'+str(wi)+'='+str(round(W[i,j], 2))+','
             wi+=1
 
