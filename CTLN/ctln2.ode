@@ -1,0 +1,9 @@
+#CTLN2
+f(x)=if(x<0)then(0)else(x)
+x1'=-x1+f(w12*x2+b)
+x2'=-x2+f(w21*x1+b)
+p b=1,w12=-2,w21=-2
+init x1=1.,x2=1.
+@ total=100,dt=.0002,xhi=100
+@ nplot=2,xp2=t,yp2=w
+done
