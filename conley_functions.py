@@ -925,6 +925,46 @@ def make_wc(W, ps, dt=0.1):
     wcstring += "done"
     return wcstring
 
+def make_ctln(W, bs, dt=0.1):
+    N = W.shape[0]
+    eqstring = ''
+    wi = 0
+    for i in range(1,W.shape[0]+1):
+        eqstring+='x'+str(i)+"'=-x"+str(i)+"+f("+'b%s+'%(i)#+'-b*y'+str(i)
+        for j in range(1,W.shape[1]+1):
+            if i!=j:
+                eqstring+='w'+str(wi)+"*x"+str(j)+'+'
+            wi+=1
+        eqstring=eqstring[:-1]+')\n'
+
+    weighstring = 'p '
+    wi=0
+    for i in range(0,W.shape[0]):
+        for j in range(0,W.shape[1]):
+            if wi%25==0 and wi!=0:
+                weighstring=weighstring[:-1]+'\np '
+            if i!=j:
+                weighstring+='w'+str(wi)+'='+str(round(W[i,j], 2))+','
+            wi+=1
+
+    inputstring = 'par '
+    for i in range(0,W.shape[0]):
+        inputstring+='b'+str(i+1)+'='+str(bs[i])+','
+
+    initstring = 'init '
+    inits = [0.]*N#np.random.rand(2*N)
+    for i in range(W.shape[0]):
+            initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
+
+    wcstring = "# ctln\n"
+    wcstring += "f(x)=if(x<0)then(0)else(x)\n"##
+    wcstring += eqstring[:-1] + "\n"
+    wcstring += weighstring[:-1] + "\n"
+    wcstring += inputstring[:-1] + " \n"
+    wcstring += initstring[:-1] + "\n"
+    wcstring += '@ xp=x1,yp=x2,xlo=-.125,ylo=-.125,xhi=1,yhi=1,dt=%s\n'%dt
+    wcstring += "done"
+    return wcstring
 
 def make_wc_mayu(W, ps, sigmoids, others, dt=0.05):
 #     W, ps, k
