@@ -1015,8 +1015,10 @@ def jac(x,W,ps):
     J = np.zeros((n,n))
     for i in range(n):
         for j in range(n):
-            ins = np.dot(W[i,:], x)+ps[i]
+            ins = np.dot(W[i,j], x[j])+ps[i]
             J[i,j] = W[i,j]*sigmoid(ins)*(1-sigmoid(ins))
+            if i==j:
+                J[i,j]+=-x[i]
     return J
 
 def eval_wcode(x, W, ps):
