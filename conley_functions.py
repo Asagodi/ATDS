@@ -97,6 +97,7 @@ class Combinatorial_Dynamical_System(object):
         self.bins = list(freq_.keys())
         self.nbins = len(list(freq_.keys()))
         self.cube_ind_dict = {k: i for i,k in enumerate(list(freq_.keys()))}
+        self.index_cube_dict = {v: k for k, v in self.cube_ind_dict.items()}
         if calc_matrix:
             self.A=lil_matrix((self.nbins, self.nbins), dtype=np.int8)
 
