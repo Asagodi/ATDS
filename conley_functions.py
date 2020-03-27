@@ -25,7 +25,7 @@ class Combinatorial_Dynamical_System(object):
         self.tuplecubes cubes as tuples
         self.cube_ind: the indices for the cubes in the order as they come in the data
         self.cube_ind_dict: dictionary between the cubes and the indices
-        self.cube_ind_dict: dictionary between the indices and the cubes
+        self.index_cube_dict: dictionary between the indices and the cubes
         the combinatorial cubical multivalued map \mathcal{F}=graph G 
             is a representation of f (f(Q)\subset |\mathcal{F}(Q)|) \forall Q\in\mathcal{X}
         """
@@ -459,6 +459,8 @@ def write_mapandcubes(graph, delta, cds):
             for cint in outedges:
                 infs+=str(cint)+' '
             mapfile+=str(node)+' -> {' + infs[:-1] + '}\n'
+        else:
+            mapfile+=str(node)+' -> {}\n'
     return cubefile, mapfile
 
 def convert_to_integertupleformat(cubical_set, delta):
