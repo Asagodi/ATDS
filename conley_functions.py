@@ -138,8 +138,8 @@ class Combinatorial_Dynamical_System(object):
         of the samples of the dynamics
         """
         ncubes = len(self.cubes)
-        self.G = nx.DiGraph()
-        self.G.add_nodes_from([i for i in range(ncubes)])
+#         self.G = nx.DiGraph()
+#         self.G.add_nodes_from([i for i in range(ncubes)])
         i=0
         ci1=0
         s=-1
@@ -887,7 +887,7 @@ def smithForm(B):
             s = s + 1
     return B, Q, Qtil, R, Rtil, s, t
 
-def make_wc(W, ps, dt=0.1):
+def make_wc(W, ps, dt=0.1, inits=[]):
     N = W.shape[0]
     eqstring = ''
     wi = 0
@@ -913,8 +913,13 @@ def make_wc(W, ps, dt=0.1):
         inputstring+='p'+str(i+1)+'='+str(ps[i])+','
 
     initstring = 'init '
-    inits = [0.]*N#np.random.rand(2*N)
-    for i in range(W.shape[0]):
+    ##np.random.rand(2*N)
+    if inits==[]:
+        inits = [0.]*N
+        for i in range(W.shape[0]):
+            initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
+    else:
+        for i in range(W.shape[0]):
             initstring+='x'+str(int(i+1))+'='+str(inits[i])+','
 
     wcstring = "# the wilson-cowan equations\n"
@@ -1018,10 +1023,10 @@ def jac(x,W,ps):
     J = np.zeros((n,n))
     for i in range(n):
         for j in range(n):
-            ins = np.dot(W[i,j], x[j])+ps[i]
+            ins = np.dot(W[i,:], x)+ps[i]
             J[i,j] = W[i,j]*sigmoid(ins)*(1-sigmoid(ins))
             if i==j:
-                J[i,j]+=-x[i]
+                J[i,j]+=-1
     return J
 
 def eval_wcode(x, W, ps):
